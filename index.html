@@ -1,0 +1,164 @@
+<script src="https://unpkg.com/vue@3"></script>
+<script src="https://unpkg.com/vue-router@4"></script>
+<script src="https://unpkg.com/vue-multiselect@2.1.0"></script>
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/vue-multiselect@2.1.0/dist/vue-multiselect.min.css"
+/>
+<link rel="stylesheet" href="style.css" />
+<div id="app">
+  <div class="list">
+    <h1><router-link to="/">Home</router-link></h1>
+    <hr />
+    <router-view :roles="roles"></router-view>
+  </div>
+</div>
+
+<script>
+  const Users = {
+    props: ["roles"],
+    data() {
+      return {
+        page: 0,
+        usersOfPage: 5,
+        users: [],
+      };
+    },
+    methods: {
+      getUsers() {
+        fetch(
+          `https://test-js.alef.dev/users?page=${this.page}&count=${this.usersOfPage}`
+        )
+          .then((res) => res.json())
+          .then((res) => (this.users = res.data));
+      },
+      goToNextPage() {
+        if (this.users.length) {
+          this.page += 1;
+        }
+        this.getUsers();
+      },
+      goToPrevPage() {
+        if (this.page > 0) {
+          this.page -= 1;
+        }
+        this.getUsers();
+      },
+    },
+    computed: {},
+    mounted() {
+      this.getUsers();
+    },
+    template: `<div>
+            <button @click="goToPrevPage">prev</button>
+            <button @click="goToNextPage">next</button>
+            <ul>
+              <li v-for="user in users" :key="user.id">
+                 <router-link :to="{ name: 'user', params: { id: user.id }}"
+                 >{{user.id}} - {{user.name}}</router-link>
+               </li>
+            </ul>
+            </div>`,
+  };
+  const User = {
+    props: ["roles"],
+    data() {
+      return {
+        user: {},
+        roleToRemove: '',
+        roleToAdd: ''
+      };
+    },
+    methods: {
+      getUser() {
+        fetch(`https://test-js.alef.dev/user/${this.$route.params.id}`)
+          .then((res) => res.json())
+          .then((res) => (this.user = res.data));
+      },
+      sendRoleToRemove(){
+        fetch(`https://test-js.alef.dev/user/${this.$route.params.id}/role/${this.indexRoleToRemove}`,{
+          method: 'DELETE'
+        })
+        .then(res => {
+          if(res.ok){
+            this.getUser();
+          }
+        })
+        
+      },
+      sendRoleToAdd(){
+        fetch(`https://test-js.alef.dev/user/${this.$route.params.id}/role/${this.indexRoleToAdd}`,{
+          method: 'Post'
+        })
+        .then(res => {
+          if(res.ok){
+            this.getUser();
+          }
+        })
+      }
+    },
+    computed: {
+      userRoles() {
+        let res = [];
+        this.user.roles?.forEach((el) => {
+          res.push(this.roles[el - 1]);
+        });
+        return res;
+      },
+      rolesToAdd() {
+       return this.roles.filter(r => !this.userRoles.includes(r))
+      },
+      indexRoleToRemove(){
+       return this.roles.indexOf(this.roleToRemove) + 1
+      },
+      indexRoleToAdd(){
+       return this.roles.indexOf(this.roleToAdd) + 1
+      }
+    },
+    mounted() {
+      this.getUser();
+    },
+    template: `<div class="user">
+                  <div>User {{ user.name }} - {{ userRoles.toString() }}</div>
+                <div v-if="userRoles.length > 1">
+                   <span>Select the role to remove:</span> <select v-model="roleToRemove">
+                    <option v-for="(role, i) in userRoles"
+                    :key="i"
+                    >{{role}}</option>
+                    </select><button @click="sendRoleToRemove">Send</button>
+                 </div>
+                 <div v-if="rolesToAdd.length">
+                  <span>Select the role to add:</span> <select v-model="roleToAdd">
+                    <option v-for="(role, i) in rolesToAdd"
+                    :key="i"
+                    >{{role}}</option>
+                    </select><button @click="sendRoleToAdd">Send</button>
+                  </div>
+                </div>
+    `,
+  };
+  const routes = [
+    { path: "/", component: Users, name: "users" },
+    { path: "/user/:id", component: User, name: "user", props: true },
+  ];
+
+  const router = VueRouter.createRouter({
+    history: VueRouter.createWebHashHistory(),
+    routes,
+  });
+
+  const app = Vue.createApp({
+    data() {
+      return {
+        roles: [],
+      };
+    },
+    mounted() {
+      fetch("https://test-js.alef.dev/roles")
+        .then((res) => res.json())
+        .then((res) => (this.roles = res.data));
+    },
+  });
+  app.use(router);
+  app.mount("#app");
+</script>

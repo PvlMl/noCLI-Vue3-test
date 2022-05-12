@@ -1,0 +1,22 @@
+
+li {
+    margin-top: 10px;
+    list-style-type: none;
+    font-size: 150%;
+}
+
+button {
+    margin-left: 25px;
+    margin-top: 25px;
+}
+select {
+    margin-top: 15px;
+}
+
+.list {
+    text-align: center; 
+}
+
+.user {
+    font-size: 150%;
+}
